@@ -125,24 +125,25 @@ x_points = []
 for place in output_data:
     for element in place[1:]:
         for next_element in element:
-            graph_name = next_element[0][0][0] + 'x' + next_element[0][0][1]
-            found = False
-            found_index = 0
-            for index,graph_element in enumerate(scalapack_graphs):
-                if(graph_element[0] == graph_name):
-                    found = True
-                    found_index = index
-                    break
-            if(not found):
-                scalapack_graphs.append([graph_name,float(next_element[0][3])])
-                if(len(next_element[0]) == 6):
-                    eigen_graphs.append([graph_name,float(next_element[0][4])])
-                blacs_graphs.append([graph_name,float(next_element[0][-1])])
-            else:
-                scalapack_graphs[found_index].append(float(next_element[0][3]))
-                if(len(next_element[0]) == 6):
-                    eigen_graphs[found_index].append(float(next_element[0][4]))
-                blacs_graphs[found_index].append(float(next_element[0][-1]))
+            if(len(next_element[0])>4):
+                graph_name = next_element[0][0][0] + 'x' + next_element[0][0][1]
+                found = False
+                found_index = 0
+                for index,graph_element in enumerate(scalapack_graphs):
+                    if(graph_element[0] == graph_name):
+                        found = True
+                        found_index = index
+                        break
+                if(not found):
+                    scalapack_graphs.append([graph_name,float(next_element[0][3])])
+                    if(len(next_element[0]) == 6):
+                        eigen_graphs.append([graph_name,float(next_element[0][4])])
+                    blacs_graphs.append([graph_name,float(next_element[0][-1])])
+                else:
+                    scalapack_graphs[found_index].append(float(next_element[0][3]))
+                    if(len(next_element[0]) == 6):
+                        eigen_graphs[found_index].append(float(next_element[0][4]))
+                    blacs_graphs[found_index].append(float(next_element[0][-1]))
         x_points.append(place[0])
 
 plt.rcParams['axes.prop_cycle'] = plt.cycler(color=plt.cm.Set2.colors)
@@ -154,25 +155,49 @@ for elements in scalapack_graphs:
     data_part = elements[1:]
     y_points = []
     error_bars = [[],[]]
+    local_x_points = []
+    current_point = 0
     for first, second, third in zip(*[iter(data_part)]*3):
         arith_mean = (first +  second + third)/3
         y_points.append(arith_mean)
         error_bars[0].append(arith_mean-min(first, second, third))
         error_bars[1].append(max(first, second, third)-arith_mean)
-    plt.errorbar(x_points, y_points, yerr=error_bars, label=label)
+        local_x_points.append(x_points[current_point])
+        current_point = current_point + 1
+    plt.errorbar(local_x_points, y_points, yerr=error_bars, label=label)
 
+for elements in blacs_graphs:
+    label = 'BLACS comms (' + elements[0] + ')'
+    data_part = elements[1:]
+    y_points = []
+    error_bars = [[],[]]
+    local_x_points = []
+    current_point = 0
+    for first, second, third in zip(*[iter(data_part)]*3):
+        arith_mean = (first +  second + third)/3
+        y_points.append(arith_mean)
+        error_bars[0].append(arith_mean-min(first, second, third))
+        error_bars[1].append(max(first, second, third)-arith_mean)
+        local_x_points.append(x_points[current_point])
+        current_point = current_point + 1
+    plt.errorbar(local_x_points, y_points, yerr=error_bars, label=label)
 
-label = 'Eigen'
-elements = eigen_graphs[0]
-data_part = elements[1:]
-y_points = []
-error_bars = [[],[]]
-for first, second, third in zip(*[iter(data_part)]*3):
-    arith_mean = (first +  second + third)/3
-    y_points.append(arith_mean)
-    error_bars[0].append(arith_mean-min(first, second, third))
-    error_bars[1].append(max(first, second, third)-arith_mean)
-plt.errorbar(x_points, y_points, yerr=error_bars, label=label)
+if(len(eigen_graphs)>0):
+    label = 'Eigen'
+    elements = eigen_graphs[0]
+    data_part = elements[1:]
+    y_points = []
+    error_bars = [[],[]]
+    local_x_points = []
+    current_point = 0
+    for first, second, third in zip(*[iter(data_part)]*3):
+        arith_mean = (first +  second + third)/3
+        y_points.append(arith_mean)
+        error_bars[0].append(arith_mean-min(first, second, third))
+        error_bars[1].append(max(first, second, third)-arith_mean)
+        local_x_points.append(x_points[current_point])
+        current_point = current_point + 1
+    plt.errorbar(local_x_points, y_points, yerr=error_bars, label=label)
 
  
 plt.yscale('log')
