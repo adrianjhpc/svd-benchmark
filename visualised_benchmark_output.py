@@ -11,7 +11,7 @@
 # the Free Software Foundation, either version 3 of the License, or
 # (at your option) any later version.
 #
-# eigen-benchmark is distributed in the hope that it will be useful,
+# svd-benchmark is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU General Public License for more details.
@@ -25,7 +25,7 @@
 # compared to the matrix size and process decomposition for the experiments undertaken.
 #
 # This is a very fragile program as it is closely tied to both the output of the benchmark
-# and the output of batch scripts to run the program. In particular it expects the eigen
+# and the output of batch scripts to run the program. In particular it expects the svd
 # benchmark to output lines like this:
 #
 # Matrix size is 16 x 16
