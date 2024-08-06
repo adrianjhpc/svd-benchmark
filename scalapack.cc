@@ -1,8 +1,9 @@
 #include "mpi.h"
+
 #ifdef MKL
 #include "mkl_blacs.h"
 #include "mkl.h"
-#endif 
+#endif
 
 #include <cmath>
 #include <iostream>
@@ -60,15 +61,10 @@ const int   CSRC_ = 7;
 int main(int argc, char** argv){
 #ifdef MKL
    const int len = 198;
-   char buf[198];
+   char buf[len];
    MKL_Get_Version_String(buf,len);
    std::cout << "MKL Version: " << buf << "\n";
 #endif
-
-   char R_letter = 'R';
-   char A_letter = 'A';
-   char N_letter = 'N';
-
    int rank(0), nprocs(1);
 
    double start, end;
@@ -84,6 +80,9 @@ int main(int argc, char** argv){
    int N = 16;
    int procrow = 4;
    int proccol = 2;
+   const char *Rletter = "R";
+   const char *Aletter = "A";
+   const char *Nletter = "N";
    blacs_get_( &i_zero, &i_zero, &ictxt );
 
 
@@ -116,11 +115,11 @@ int main(int argc, char** argv){
 
    ictxt_all = ictxt;
    
-   blacs_gridinit_(&ictxt_all, &R_letter, &nprocs, &i_one);
+   blacs_gridinit_(&ictxt_all, (char *)Rletter, &nprocs, &i_one);
    
    ictxt_some = ictxt;
    
-   blacs_gridinit_(&ictxt_some, &R_letter, &nprow, &npcol);
+   blacs_gridinit_(&ictxt_some, (char *)Rletter, &nprow, &npcol);
    
    int minMN = std::min(M,N);
    std::vector<double> s(minMN*dtype);
@@ -144,7 +143,6 @@ int main(int argc, char** argv){
      int info(0);
      std::vector<double> a(mp*np*dtype,0.0);
 
-     std::vector<double> pwork(mb*dtype*5);
      Eigen::VectorXd A(mp*np*dtype);
      Eigen::VectorXd newA(mp*np*dtype);
      A.setZero();
@@ -180,7 +178,7 @@ int main(int argc, char** argv){
             std::cout << "Blacs gather time is: " << end - start << std::endl;
      }
 
-     blacs_barrier_(&ictxt_some, &A_letter);
+     blacs_barrier_(&ictxt_some, (char *)Aletter);
 
      start = MPI_Wtime();
 
@@ -201,12 +199,12 @@ int main(int argc, char** argv){
      }
 
      if(2 == dtype){
-       pzgesvd_(&N_letter,&N_letter,&M,&N,&newA[0],&i_one,&i_one,desca,&s[0],
+       pzgesvd_((char *)Nletter,(char *)Nletter,&M,&N,&newA[0],&i_one,&i_one,desca,&s[0],
 		u,&i_one,&i_one,descu,
 		vt,&i_one,&i_one,descvt,
 		&work[0],&lwork,&rwork[0],&info);
      }else{
-        pdgesvd_(&N_letter,&N_letter,&M,&N,&newA[0],&i_one,&i_one,desca,&s[0],
+        pdgesvd_((char *)Nletter,(char *)Nletter,&M,&N,&newA[0],&i_one,&i_one,desca,&s[0],
          u,&i_one,&i_one,descu,
          vt,&i_one,&i_one,descvt,
          &work[0],&lwork,&info);
@@ -226,7 +224,7 @@ int main(int argc, char** argv){
        if(rank == ROOT){
 	 printf("pzgesvd\n");
        }
-       pzgesvd_(&N_letter,&N_letter,&M,&N,&newA[0],&i_one,&i_one,desca,&s[0],
+       pzgesvd_((char *)Nletter,(char *)Nletter,&M,&N,&newA[0],&i_one,&i_one,desca,&s[0],
 		u,&i_one,&i_one,descu,
 		vt,&i_one,&i_one,descvt,
 		&work[0],&lwork,&rwork[0],&info);
@@ -234,7 +232,7 @@ int main(int argc, char** argv){
        if(rank == ROOT){
 	 printf("pdgesvd\n");
        }
-       pdgesvd_(&N_letter,&N_letter,&M,&N,&newA[0],&i_one,&i_one,desca,&s[0],
+       pdgesvd_((char *)Nletter,(char *)Nletter,&M,&N,&newA[0],&i_one,&i_one,desca,&s[0],
 		u,&i_one,&i_one,descu,
 		vt,&i_one,&i_one,descvt,
 		&work[0],&lwork,&info);
@@ -244,7 +242,7 @@ int main(int argc, char** argv){
      }
      blacs_gridexit_(&ictxt_some);
    }
-   blacs_barrier_(&ictxt_all, &A_letter);
+   blacs_barrier_(&ictxt_all, (char *)Aletter);
    blacs_gridexit_(&ictxt_all);
    end = MPI_Wtime();
 
@@ -271,8 +269,10 @@ int main(int argc, char** argv){
 
    }
 
-   blacs_exit_(&i_zero);
-   
+   blacs_exit_(&i_one);
+
+   MPI_Finalize();
+
    return 0;
 }
 
